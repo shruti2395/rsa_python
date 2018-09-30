@@ -30,7 +30,7 @@ def verify_primes_p_q(p, q):
         return False
 
     # Check gcd(p-1, e) and gcd(q-1, e) is 1.
-    return gcd(p-1, e) == 1 and gcd(q-1, e) == 1
+    return gcd(p - 1, e) == 1 and gcd(q - 1, e) == 1
 
 def generate_primes_p_q(e):
     from PrimeGenerator import PrimeGenerator
@@ -50,13 +50,13 @@ def generate_primes_p_q(e):
 
 # Encrypt function
 def encrypt(message_blocks, e, p, q):
-    n = p*q
+    n = p * q
     encrypted = [(m ** e) % n for m in message_blocks]
     return encrypted
 
 def generate_private_key_d(e, p, q):
-    n = p*q
-    phi = (p-1)*(q-1)
+    n = p * q
+    phi = (p - 1) * (q - 1)
 
     bv_modulus = BitVector(intVal = phi)
     bv = BitVector(intVal = e)
@@ -66,10 +66,29 @@ def generate_private_key_d(e, p, q):
     return d
 
 def decrypt(cipher_blocks, e, p, q):
-    n = p*q
+    n = p * q
     d = generate_private_key_d(e, p, q)
     decrypted = [(c ** d) % n for c in cipher_blocks]
     print(decrypted)
+    return decrypted
+
+def decrypt_chinese_remainder(cipher_blocks, e, p, q):
+    d = generate_private_key_d(e, p, q)
+    d_p = d % (p - 1)
+    d_q = d % (q - 1)
+
+    bv_modulus = BitVector(intVal = p)
+    q_bv = BitVector(intVal = q)
+    q_inv = int(q_bv.multiplicative_inverse(bv_modulus))
+
+    decrypted = []
+    for c in cipher_blocks:
+        m1 = (c ** d_p) % p
+        m2 = (c ** d_q) % q
+        h = (q_inv * (m1 - m2)) % p
+        m = m2 + (h * q)
+        decrypted.append(m)
+
     return decrypted
 
 # Read from file
@@ -156,7 +175,8 @@ if __name__ == "__main__":
         print("Cipher blocks:")
         print(cipher_blocks)
 
-        decrypted_blocks = decrypt(cipher_blocks, e, p, q)
+        # decrypted_blocks = decrypt(cipher_blocks, e, p, q)
+        decrypted_blocks = decrypt_chinese_remainder(cipher_blocks, e, p, q)
         print("Decrypted blocks:")
         print(decrypted_blocks)
 
